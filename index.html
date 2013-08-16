@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <title>Bmctigue.github.io by bmctigue</title>
+  </head>
+
+  <body>
+    <div id="container">
+      <div class="inner">
+
+        <header>
+          <h1>Bmctigue.github.io</h1>
+          <h2></h2>
+        </header>
+
+        <section id="downloads" class="clearfix">
+          <a href="https://github.com/bmctigue" id="view-on-github" class="button"><span>View on GitHub</span></a>
+        </section>
+
+        <hr>
+
+        <section id="main_content">
+          <h1>
+<a name="unboxing-rubymotion" class="anchor" href="#unboxing-rubymotion"><span class="octicon octicon-link"></span></a>Unboxing RubyMotion</h1>
+
+<h2>
+<a name="introduction" class="anchor" href="#introduction"><span class="octicon octicon-link"></span></a>Introduction</h2>
+
+<p>I wrote up a brief description of how I set up my first project using RM in response to a question in the RM Google Group. I had several requests to write up a blog with more details, so here goes. I'm going to give a brief (maybe not so brief) overview of my experience and include some of the lessons I learned. Hopefully this will smooth the way for new RM users.</p>
+
+<h2>
+<a name="a-brief-bio-and-a-plug-for-rm" class="anchor" href="#a-brief-bio-and-a-plug-for-rm"><span class="octicon octicon-link"></span></a>A Brief Bio and a Plug for RM</h2>
+
+<p>I've been coding for a long time, but I don't have a degree in Computer Science. I have a degree in Electrical Engineering. I've never used anything I learned in engineering school, except for the rudimentary skills I learned in programming classes where we ran programs on punch cards (Wow, I'm old). I really enjoy coding, but I consider myself more of an applications developer and I'm mostly self-taught. I don't have any interest in digging deep into the bowels of the framework I'm using. I just want to get my application to work. Thank goodness there are developers who really care that arrays in Objective-C require objects and have to be terminated with a nil, but I'm not one of them. I certainly would not consider myself a "ninja" or a "rockstar" or some other idiotic term for an exceptional programmer. However, I do code quickly and the code works when it's done. That's where RM really shines. Just coding in ruby elimates an incredible amount of code that doesn't contribute in any way to getting my app done. Don't get me wrong, there are plenty of api gotchas and optimations that require my digging deep, but I don't dig into these unless I need to. When you consider having access to Ruby plus the amazing libraries maintained by the community that add functionality and shortcuts, you will never want to go back to XCode.</p>
+
+<p>If you're like me, maybe you just want an array initialized with the number 1. Should be simple, right? </p>
+
+<p>Old Objective-C - are you kidding me?</p>
+
+<pre><code>NSArray *myArray = [NSArray arrayWithObject:[NSNumber numberWithInt:1]]
+</code></pre>
+
+<p>Newer Objective-C - better</p>
+
+<pre><code>NSArray *myArray = @[@1] 
+</code></pre>
+
+<p>RubyMotion - nice, thank you Matz and Laurent!</p>
+
+<pre><code>myArray = [1]
+</code></pre>
+
+<p>I worked for many years doing Ruby on Rails development, so transitioning from web development to iOS development with RM was a breeze.</p>
+
+<h2>
+<a name="my-first-rm-project" class="anchor" href="#my-first-rm-project"><span class="octicon octicon-link"></span></a>My First RM Project</h2>
+
+<p>So I just left my position at Crushpath, what am I going to do now? (This was Dec '12) Of course, I wanted to get started with a new app, but what? I teamed up with a partner who had an idea for a photo sharing app targeted specifically at parents who want to document their kids growing up (<a href="http://appstore.com/pixsee/" title="Pixsee">Pixsee</a>). Okay, great. Where do I start? As you know, there are lots of photo sharing apps. Is there some common code to use as a basis?
+I had just heard of <a href="http://parse.com/" title="Parse">Parse</a> and their backend as a service. Cool, my app doesn't need a website, but we do need to host the data somewhere. <a href="http://parse.com/" title="Parse">Parse</a> would save me a ton of development time by not having to create a Rails site to host my data. And as it turns out, <a href="http://parse.com/" title="Parse">Parse</a> has an open source example iOS app for photo sharing! </p>
+
+<p>With a reasonable size iOS example application in hand and a desire to learn RM quickly, I decided I would just dig in and port the Anypic app to RM. It looked like a daunting amount of typing, but I figured porting a large variety of code to RM would be the quickest way to learn the syntax and my new app could benefit from RM from then on.</p>
+
+<h3>
+<a name="rm-app-structure" class="anchor" href="#rm-app-structure"><span class="octicon octicon-link"></span></a>RM App Structure</h3>
+
+<p>The first thing I had to decide was what code goes where. You have 3 choices:</p>
+
+<ul>
+<li>XCode static library</li>
+<li>Objective-C files stored in the RM Vendor directory</li>
+<li>Straight Ruby files</li>
+</ul><p>I wanted to convert as much of the code to RM as possible, so I decided to put all 3rd party libraries in a new static library and I would convert the rest to Ruby. If you want to convert an application quickly, you might decide to put all your existing code in the static library and then add new functionality with Ruby. You can mix and match. One thing I would caution is if you decide to use a 3rd party library with multiple classes and put it in the static library, you should leave all the files associated with that library in the static library. I'm not sure if it's still an issue, but taking a class out of the static library and putting it in a vendor directory could cause compiling problems with importing header files.</p>
+
+<p>So when do I use the vendor directory? Right off the bat the XCode static library goes into a vendor directory. Below is an example Rakefile, which shows the syntax for the static library entry plus other defaults I use. Otherwise, I put Object-C classes that I know I will want to change in a vendor directory. The advantage here is changes to the static library require you to do a rake clean, while changes to the vendor classes don't. Compiling after a clean can take significantly longer than otherwise, because everything has to be recompiled.</p>
+
+<p>Pods don't need to be included in the static library, you should add an entry for each pod in the Rakefile. See the example below. One issue I ran across happens when you remove a pod from the Rakefile. In my experience the resources for the pod aren't removed, so they never go away! If you remove a pod, I would do a rake clean and then remove the Pods directory in the Vendor directory. This way the Pods directory will be clean.</p>
+
+<p>Move all your resources into the resources directory. This includes all your images and fonts. By default all the resources are put in the top level resources folder, but this can make it difficult to manage the resources. I took advantage of RM's ability to find resources in sub folders if you tell it where to look. You can add a line like this to your Rakefile to organize your resources.</p>
+
+<pre><code>app.resources_dirs &lt;&lt; ['resources/app','resources/backgrounds','resources/buttons','resources/fonts','resources/icons','resources/misc']
+</code></pre>
+
+<p>The example Rakefile also shows how to add information for using different provisioning profiles depending on the environment. I have entries for development and release. When I want to release, I uncomment the correct line depending on whether the release is ad hoc or distribution. I release to both Testflight and Apple and it only takes about 5 minutes now unless I make a mistake like not updating the version number.</p>
+
+<p>Next, add all frameworks you need to the Rakefile frameworks section.</p>
+
+<p>Lastly, add all your vendor references.</p>
+
+<p>Example Rakefile:</p>
+
+<pre><code>$:.unshift("/Library/RubyMotion/lib")
+require 'motion/project/template/ios'
+require 'rubygems'
+require 'bubble-wrap/core'
+require 'sugarcube'
+require 'bundler'
+require 'motion-cocoapods'
+
+Motion::Project::App.setup do |app|
+  # Use `rake config' to see complete project settings.
+  app.name = '########'
+  app.identifier = '########'
+  app.version = '########'
+  app.sdk_version = '6.1'
+  app.deployment_target = '6.0'
+  app.prerendered_icon = true
+  app.interface_orientations = [:portrait]
+  app.seed_id = '########'
+  app.entitlements['application-identifier'] = app.seed_id + '.' + app.identifier
+  app.entitlements['keychain-access-groups'] = [app.seed_id + '.*']
+
+  app.development do
+    app.codesign_certificate = '########'
+    app.provisioning_profile = '########'
+    app.entitlements['aps-environment'] = 'development'
+    app.entitlements['get-task-allow']  = true
+  end
+
+  app.release do
+    app.codesign_certificate = '########'
+    # distribution profile
+    # app.provisioning_profile = '########'
+    # ad hoc profile
+    app.provisioning_profile = '########'
+    app.entitlements['aps-environment'] = 'production'
+    app.entitlements['get-task-allow']  = false
+  end
+
+  app.pods do
+    pod 'SomePod', '~&gt; 0.0.1'
+  end
+
+  app.libs += ['/usr/lib/libz.dylib', '/usr/lib/libsqlite3.dylib']
+  app.info_plist['CFBundleShortVersionString'] = '1.2.4'
+  app.info_plist['UIAppFonts'] = ['FontAwesome.otf']
+
+  app.frameworks += ['UIKit']
+  app.vendor_project('vendor/Parse.framework', :static, :products =&gt; ['Parse'], :headers_dir =&gt; 'Headers')
+  app.vendor_project('vendor/Pixsee', :xcode, :xcodeproj =&gt; 'Pixsee.xcodeproj', :target =&gt; 'Pixsee', :products =&gt; ['libPixsee.a'])
+end
+</code></pre>
+
+<h3>
+<a name="2-weeks-of-typing-mostly-copy-and-pasting" class="anchor" href="#2-weeks-of-typing-mostly-copy-and-pasting"><span class="octicon octicon-link"></span></a>2 Weeks of Typing (mostly copy and pasting)</h3>
+
+<p>Ok, so now I'm ready to port over all the classes to RM. It wasn't exciting, but I took 2 weeks over Christmas to get it done. I use Sublime Text for my development. Fortunately, there are common code blocks you can replace over and over. In Sublime Text, command-d and replace are going to be your best friends. </p>
+
+<p>Let's start with the header files. Oh, wait, that's right! There aren't any!!</p>
+
+<p>Then let's convert the implementation files. Generally, I would create a new Ruby class and copy and paste the guts of the Objective-C class. The following are a few examples of the very common blocks of Objective-C you can remove or replace with RM equivalents.</p>
+
+<ol>
+<li>Remove all ";"</li>
+<li>Remove all "{" where appropriate(i.e not opening a hash)</li>
+<li>Replace all "}" with "end" where appropriate (i.e. not closing a hash)</li>
+<li>Replace all "else if" with "elsif"</li>
+<li>Replace "[object message]" with "object.message"</li>
+<li>Replace blocks "^{ }" with "lambda {}" (or equivalent, include parameters if necessary)</li>
+<li>Replace method return types, i.e. replace "- (void)" with "def"</li>
+<li>Method declations - RM syntax is quite close to Objective-C:</li>
+</ol><p>Replace:</p>
+
+<pre><code>- (void) touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
+}
+</code></pre>
+
+<p>With:</p>
+
+<pre><code>def touchesBegan(touches, withEvent:event)
+end
+</code></pre>
+
+<p>Notice all the parameters are separated with commas and there are no type declarations.</p>
+
+<p>Also, you need to replace all lowercase first letters in constants with uppercase. Constants in Ruby are uppercase. This seems to trip up everyone at the beginning. I like to create a constants module where I can easily update the values. Import the constants module where you need access to the constants:</p>
+
+<pre><code>module MyConstants
+  KApplicationName = 'Pixsee'
+  KTestFlightId = '########'
+end
+</code></pre>
+
+<p>I know there are all sorts of opinions on code organization, but I like to refactor non-essential code to a separate file where I can find it easily.  For example, I take advantage of Ruby Modules to separate out button code from view controllers so I don't clutter up the main code. I just put the button definitions and actions into a separate module and then include the module in the view controller.</p>
+
+<p>Categories from Objective-C are dead simple to create. Just create a class with the same name as the class you are extending and add the new methods. Done. I generally put files like this in a lib directory under the main app directory.</p>
+
+<p>Finally, you may have Interface Builder files you want to use in your project. I didn't it in this project, but I have in subsequent projects. You'll want to check out <a href="https://github.com/yury/ib/" title="IB">IB</a>, which makes it very simple to use your xib files with the syntax you're used to. You can open Interface Builder from RM, so you can maintain your xib files normally.</p>
+
+<h2>
+<a name="stuff-i-always-use" class="anchor" href="#stuff-i-always-use"><span class="octicon octicon-link"></span></a>Stuff I always Use</h2>
+
+<h3>
+<a name="bubblewrap-and-sugarcube---dont-leave-home-without-them" class="anchor" href="#bubblewrap-and-sugarcube---dont-leave-home-without-them"><span class="octicon octicon-link"></span></a>BubbleWrap and SugarCube - Don't leave home without them</h3>
+
+<p>To me, this is RM's secret sauce. These two libraries have a huge number of coding shortcuts. You will certainly find a few that you use over and over again. Let me give you an example. I like to create a theme class that defines a four color palette. I use the palette to give my app a pleasant look with colors that provide good contrast until I get to the stage where I need a real graphic designer. The following defines a simple theme class with a Facebook blue color palette:</p>
+
+<pre><code>class MyTheme
+  @light_color        = [218,228,240].uicolor
+  @very_light_color   = [237,237,245].uicolor
+  @dark_color         = [53,93,152].uicolor
+  @very_dark_color    = [38,65,108].uicolor
+  @default_text_color = :white.uicolor
+  @default_font_name  = 'FontAwesome'
+  @default_font_size  = 16
+
+  class &lt;&lt; self
+    attr_reader   :light_color,
+                  :very_light_color,
+                  :dark_color,
+                  :very_dark_color,
+                  :default_text_color,
+                  :default_font_name,
+                  :default_font_size
+  end
+end
+</code></pre>
+
+<p>Then I can use:</p>
+
+<pre><code>myView.backgroundColor = MyTheme.very_dark_color
+</code></pre>
+
+<p>How about specifying a color with '#FF8A19'.to_color or :clear.uicolor? You might review <a href="http://bubblewrap.io/" title="BubbleWrap">BubbleWrap</a> and <a href="https://github.com/rubymotion/sugarcube/" title="SugarCube">SugarCube</a> to see everything they provide.</p>
+
+<h3>
+<a name="fontawesome---an-awesome-font" class="anchor" href="#fontawesome---an-awesome-font"><span class="octicon octicon-link"></span></a>FontAwesome - an awesome font</h3>
+
+<p><a href="http://fortawesome.github.io/Font-Awesome/" title="FontAwesome">FontAwesome</a> provides an incredible number of icons you can include in text strings. We use the icons liberally throughout (<a href="http://appstore.com/pixsee/" title="Pixsee">Pixsee</a>) to spice up text, especially in natural places like menu tableviews.</p>
+
+<h2>
+<a name="conclusion" class="anchor" href="#conclusion"><span class="octicon octicon-link"></span></a>Conclusion</h2>
+
+<p>I went through this exercise over 7 months ago, so I may have missed a few of the hurdles I had to jump to get a working app. I know this may a bit simplistic for the sophisticated RM audience, but I hope this is useful if you are getting your feet wet with a new or ported app.</p>
+
+<p>There is way more available than I can review here. Make sure you review everything on the developer page. I would also review all the cool RM wrappers and libraries. There is probably something there that will make your life much easier.</p>
+
+<p>Don't forget to thank the RM team for making coding fun again! Or, I'm sure they wouldn't mind you buying a license and skipping the thank you. 8&gt;)</p>
+        </section>
+
+        <footer>
+          This page was generated by <a href="http://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.
+        </footer>
+
+        
+      </div>
+    </div>
+  </body>
+</html>
